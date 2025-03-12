@@ -4,6 +4,7 @@ import { Kafka } from 'kafkajs';
 import dotenv from 'dotenv';
 import winston from 'winston';
 import { config } from './config';
+import { storeTransaction } from '../db';
 
 // Load environment variables
 dotenv.config();
@@ -60,6 +61,9 @@ app.post('/transaction', async (req: Request, res: Response) => {
     });
     
     logger.info('Transaction sent to Kafka', { transactionId: transaction.id });
+
+    // Store transaction in Couchbase
+    await storeTransaction(transaction);
     
     res.status(200).json({
       status: 'Transaction received and published.',

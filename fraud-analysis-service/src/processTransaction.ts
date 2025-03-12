@@ -1,6 +1,7 @@
 import axios, { AxiosError } from 'axios';
 import winston from 'winston';
 import { config } from './config';
+import { storeRelationship } from './neptuneClient';
 
 // Initialize logger
 const logger = winston.createLogger({
@@ -69,6 +70,9 @@ export async function processTransaction(transaction: any): Promise<number | nul
         threshold: config.fraudDetection.threshold,
         explanation: response.data.explanation
       });
+      
+      // Store relationship in AWS Neptune
+      await storeRelationship(transaction.id, 'suspected-entity');
       
       // Here you would typically:
       // 1. Store the flagged transaction in a database

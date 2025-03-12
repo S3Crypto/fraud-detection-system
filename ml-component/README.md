@@ -21,6 +21,23 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
+## Data Storage Integration
+
+This project integrates two data storage solutions:
+
+### Couchbase
+- Used for high-speed transactional storage of raw transactions.
+- Ensure the following environment variables are set:
+  - `COUCHBASE_CONNECTION_STRING`
+  - `COUCHBASE_USERNAME`
+  - `COUCHBASE_PASSWORD`
+  - `COUCHBASE_BUCKET`
+
+### AWS Neptune
+- Used to simulate graph-based analysis by storing relationships between entities (e.g., transactions and related accounts).
+- Ensure the following environment variable is set:
+  - `NEPTUNE_ENDPOINT`
+
 ## Running the Application
 
 Start the Flask application:
@@ -79,10 +96,12 @@ Health check endpoint to verify the service is running.
 
 ## Running Tests
 
-Execute the test suite:
+Execute the test suite for the transaction service:
 ```bash
 python -m unittest test_app.py
 ```
+
+Ensure both Couchbase and AWS Neptune services are properly configured and running before executing the tests.
 
 ## Scoring Logic
 
