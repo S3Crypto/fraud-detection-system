@@ -2,6 +2,16 @@
 
 A distributed system for real-time transaction fraud detection using microservices architecture.
 
+## Project Overview
+
+The Real-Time Fraud Detection System is designed to process transactions in real-time, analyze them for potential fraud, and store relevant data for further analysis. It consists of several key components:
+
+- **Transaction Ingestion Service**: Handles incoming transaction data and publishes it to Kafka.
+- **Fraud Analysis Service**: Consumes transaction data from Kafka, applies fraud detection algorithms, and interacts with the ML component.
+- **Python ML Component**: Provides fraud scoring based on transaction data.
+- **Data Storage Integration**: Utilizes Couchbase for transactional storage and AWS Neptune for graph-based analysis.
+- **CI/CD Pipeline**: Automates testing and deployment processes using GitHub Actions.
+
 ## System Architecture
 
 The system consists of three main components:
@@ -18,6 +28,10 @@ The system consists of three main components:
    - Machine learning model for fraud scoring
    - Model training and inference APIs
 
+## Architecture Diagram
+
+![Architecture Diagram](./architecture-diagram.png)
+
 ## Project Structure
 
 ```
@@ -29,7 +43,7 @@ The system consists of three main components:
 └── ci-cd/               # CI/CD configuration
 ```
 
-## Development Setup
+## Setup and Installation
 
 ### Prerequisites
 - Node.js 18+
@@ -37,8 +51,37 @@ The system consists of three main components:
 - Docker
 - Terraform
 
-### Local Development
-Instructions for local development setup will be added as components are implemented.
+### Environment Setup
+
+1. **Transaction Ingestion Service**:
+   - Navigate to `transaction-service` and run `npm install`.
+   - Set up environment variables in a `.env` file.
+
+2. **Fraud Analysis Service**:
+   - Navigate to `fraud-analysis-service` and run `npm install`.
+   - Set up environment variables in a `.env` file.
+
+3. **ML Component**:
+   - Navigate to `ml-component` and run `pip install -r requirements.txt`.
+   - Set up environment variables in a `.env` file.
+
+### Running the Application
+
+- **Transaction Ingestion Service**: Run `npm start` in the `transaction-service` directory.
+- **Fraud Analysis Service**: Run `npm start` in the `fraud-analysis-service` directory.
+- **ML Component**: Run `python app.py` in the `ml-component` directory.
+
+### CI/CD Pipeline Overview
+
+The CI/CD pipeline is configured using GitHub Actions and includes:
+- Linting and testing for Node.js/TypeScript and Python components.
+- Building and deployment processes.
+
+### Troubleshooting
+
+- Ensure all environment variables are correctly set.
+- Check service logs for error messages.
+- Verify network connectivity between services.
 
 ## Infrastructure
 
