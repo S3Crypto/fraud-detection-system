@@ -1,0 +1,43 @@
+name: Fraud Analysis Service CI/CD
+
+on:
+  push:
+    paths:
+      - 'fraud-analysis-service/**'
+      - '.github/workflows/fraud-analysis-service.yml'
+    branches: [ main ]
+  pull_request:
+    paths:
+      - 'fraud-analysis-service/**'
+      - '.github/workflows/fraud-analysis-service.yml'
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: fraud-analysis-service/package-lock.json
+
+    - name: Install dependencies
+      working-directory: ./fraud-analysis-service
+      run: npm ci
+
+    - name: Lint
+      working-directory: ./fraud-analysis-service
+      run: npm run lint
+
+    - name: Build
+      working-directory: ./fraud-analysis-service
+      run: npm run build
+
+    - name: Test
+      working-directory: ./fraud-analysis-service
+      run: npm test
