@@ -25,7 +25,7 @@ export async function storeRelationship(transactionId: string, relatedEntity: st
     const result = await client.submit(query);
     console.log(`Stored relationship in AWS Neptune for transaction ${transactionId}`);
     return result;
-  } catch (error) {
+  } catch (error: any) {
     console.error(`Error storing relationship for transaction ${transactionId}:`, error);
     throw error;
   }
