@@ -1,15 +1,21 @@
 import gremlin from 'gremlin';
 const { driver } = gremlin;
 
-// Replace with your Neptune endpoint details
+// Initialize the Neptune client using environment variables for flexibility
 const client = new driver.Client(
   process.env.NEPTUNE_ENDPOINT || 'wss://your-neptune-endpoint:8182/gremlin',
   { traversalSource: 'g' }
 );
 
+/**
+ * Stores a relationship in AWS Neptune between a transaction and a related entity.
+ * @param transactionId - The ID of the transaction.
+ * @param relatedEntity - The identifier or name of the related entity.
+ */
 export async function storeRelationship(transactionId: string, relatedEntity: string) {
   try {
-    // Simulate adding vertices/edges to represent relationships
+    // Build a Gremlin query to add a transaction vertex and an entity vertex,
+    // and create an edge between them.
     const query = `
       g.addV('transaction').property('id', '${transactionId}')
        .as('t')
