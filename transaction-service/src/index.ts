@@ -1,14 +1,16 @@
-import express from 'express';
-import dotenv from 'dotenv';
+import express, { Request, Response } from 'express';
+import bodyParser from 'body-parser';
 import { Kafka } from 'kafkajs';
+import dotenv from 'dotenv';
 import winston from 'winston';
+import { config } from './config';
 
 // Load environment variables
 dotenv.config();
 
 // Configure logger
 const logger = winston.createLogger({
-  level: 'info',
+  level: config.logging.level,
   format: winston.format.json(),
   defaultMeta: { service: 'transaction-service' },
   transports: [
@@ -23,33 +25,35 @@ const logger = winston.createLogger({
 
 // Initialize Kafka producer
 const kafka = new Kafka({
-  clientId: 'transaction-service',
-  brokers: (process.env.KAFKA_BROKERS || 'localhost:9092').split(','),
+  clientId: config.kafka.clientId,
+  brokers: config.kafka.brokers,
 });
 
 const producer = kafka.producer();
 
 // Initialize Express app
 const app = express();
-const port = process.env.PORT || 3000;
-
-app.use(express.json());
+app.use(bodyParser.json());
 
 // Health check endpoint
-app.get('/health', (req, res) => {
+app.get('/health', (req: Request, res: Response) => {
   res.status(200).json({ status: 'ok' });
 });
 
 // Transaction ingestion endpoint
-app.post('/api/transactions', async (req, res) => {
+app.post('/transaction', async (req: Request, res: Response) => {
+  const transaction = req.body;
+  
+  // Basic validation for required fields
+  if (!transaction.id || !transaction.amount || !transaction.timestamp) {
+    logger.warn('Invalid transaction data received', { transaction });
+    return res.status(400).json({ error: 'Missing required transaction fields: id, amount, timestamp' });
+  }
+  
   try {
-    const transaction = req.body;
-    
-    // Validate transaction data (to be implemented)
-    
     // Send transaction to Kafka for processing
     await producer.send({
-      topic: 'transactions',
+      topic: config.kafka.topic,
       messages: [
         { value: JSON.stringify(transaction) },
       ],
@@ -57,13 +61,13 @@ app.post('/api/transactions', async (req, res) => {
     
     logger.info('Transaction sent to Kafka', { transactionId: transaction.id });
     
-    res.status(202).json({
-      message: 'Transaction accepted for processing',
+    res.status(200).json({
+      status: 'Transaction received and published.',
       transactionId: transaction.id,
     });
   } catch (error) {
-    logger.error('Error processing transaction', { error });
-    res.status(500).json({ error: 'Failed to process transaction' });
+    logger.error('Error publishing to Kafka', { error, transaction });
+    res.status(500).json({ error: 'Failed to publish transaction.' });
   }
 });
 
@@ -73,8 +77,9 @@ async function startServer() {
     await producer.connect();
     logger.info('Connected to Kafka');
     
-    app.listen(port, () => {
-      logger.info(`Transaction service listening on port ${port}`);
+    const PORT = config.server.port;
+    app.listen(PORT, () => {
+      logger.info(`Transaction service listening on port ${PORT}`);
     });
   } catch (error) {
     logger.error('Failed to start server', { error });
@@ -82,7 +87,10 @@ async function startServer() {
   }
 }
 
-startServer();
+// Only start the server if this file is run directly
+if (require.main === module) {
+  startServer();
+}
 
 // Handle graceful shutdown
 process.on('SIGTERM', async () => {
@@ -90,3 +98,5 @@ process.on('SIGTERM', async () => {
   await producer.disconnect();
   process.exit(0);
 });
+
+export { app }; // Export for testing
