@@ -1,10 +1,9 @@
 import express, { Request, Response } from 'express';
 import bodyParser from 'body-parser';
-import { Kafka } from 'kafkajs';
 import dotenv from 'dotenv';
 import winston from 'winston';
 import { config } from './config';
-import { storeTransaction } from '../db';
+import { storeTransaction, getTransaction } from './db';
 
 // Load environment variables
 dotenv.config();
@@ -24,13 +23,20 @@ const logger = winston.createLogger({
   ],
 });
 
-// Initialize Kafka producer
-const kafka = new Kafka({
-  clientId: config.kafka.clientId,
-  brokers: config.kafka.brokers,
-});
+// Mock Kafka producer for development
+const mockProducer = {
+  connect: async () => {
+    logger.info('Mock Kafka producer connected');
+  },
+  send: async ({ topic, messages }: { topic: string, messages: any[] }) => {
+    logger.info('Mock Kafka producer sent message', { topic, messages });
+  },
+  disconnect: async () => {
+    logger.info('Mock Kafka producer disconnected');
+  }
+};
 
-const producer = kafka.producer();
+const producer = mockProducer;
 
 // Initialize Express app
 const app = express();
@@ -39,6 +45,23 @@ app.use(bodyParser.json());
 // Health check endpoint
 app.get('/health', (req: Request, res: Response) => {
   res.status(200).json({ status: 'ok' });
+});
+
+// Get transaction by ID endpoint
+app.get('/transaction/:id', async (req: Request, res: Response) => {
+  const { id } = req.params;
+  
+  try {
+    const transaction = await getTransaction(id);
+    res.status(200).json(transaction);
+  } catch (error) {
+    logger.error('Error retrieving transaction', { error, transactionId: id });
+    if ((error as Error).message === 'Document not found') {
+      res.status(404).json({ error: 'Transaction not found' });
+    } else {
+      res.status(500).json({ error: 'Failed to retrieve transaction' });
+    }
+  }
 });
 
 // Transaction ingestion endpoint
@@ -52,7 +75,7 @@ app.post('/transaction', async (req: Request, res: Response) => {
   }
   
   try {
-    // Send transaction to Kafka for processing
+    // Send transaction to mock Kafka for processing
     await producer.send({
       topic: config.kafka.topic,
       messages: [
@@ -62,7 +85,7 @@ app.post('/transaction', async (req: Request, res: Response) => {
     
     logger.info('Transaction sent to Kafka', { transactionId: transaction.id });
 
-    // Store transaction in Couchbase
+    // Store transaction in mock database
     await storeTransaction(transaction);
     
     res.status(200).json({
@@ -70,8 +93,8 @@ app.post('/transaction', async (req: Request, res: Response) => {
       transactionId: transaction.id,
     });
   } catch (error) {
-    logger.error('Error publishing to Kafka', { error, transaction });
-    res.status(500).json({ error: 'Failed to publish transaction.' });
+    logger.error('Error processing transaction', { error, transaction });
+    res.status(500).json({ error: 'Failed to process transaction.' });
   }
 });
 
@@ -79,7 +102,7 @@ app.post('/transaction', async (req: Request, res: Response) => {
 async function startServer() {
   try {
     await producer.connect();
-    logger.info('Connected to Kafka');
+    logger.info('Mock services initialized');
     
     const PORT = config.server.port;
     app.listen(PORT, () => {
